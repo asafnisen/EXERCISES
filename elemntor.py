@@ -28,6 +28,7 @@ conn = pyodbc.connect('Driver={SQL Server};'
                       'Database=TEST_asaf;'
                       'Trusted_Connection=yes;')
 
+## דוגמה שליפה ODBC 
 cursor = conn.cursor()
 cursor.execute('SELECT * FROM asaf')
 

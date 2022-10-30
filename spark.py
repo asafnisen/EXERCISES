@@ -5,11 +5,15 @@ from pyspark.sql.functions import lit
 
 import pyodbc
 from sql_config import SQL_SERVER_server, SQL_SERVER_database
+import sqlalchemy as sal
+from sqlalchemy import create_engine
 
 conn = pyodbc.connect('Driver={SQL Server};'+
                       'Server={};'.format(SQL_SERVER_server)+
                       'Database={};'.format(SQL_SERVER_database)+
                       'Trusted_Connection=yes;')
+
+engine = create_engine('mssql+pyodbc://' + SQL_SERVER_server + '/' + SQL_SERVER_database + '?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server')
 
 ## all_video_advertisers 
 spark = SparkSession.builder.master("local[1]").appName("SparkByExamples.com").getOrCreate()
@@ -43,8 +47,12 @@ all_video_advertisers.createOrReplaceTempView("temp2")
 sqlDF = spark.sql(" select ROW_NUMBER() OVER(PARTITION BY Advertiser_Name,Domain ORDER BY Date ASC) ,* from (SELECT * FROM temp union SELECT * FROM temp2) t where Advertiser_Name = 'Rubicon' order by Advertiser_Name,Domain ")
 
 
+## דוגמה שליפה ODBC + ALCHEMY
+
 cursor = conn.cursor()
 cursor.execute('SELECT * FROM asaf')
 
 for i in cursor:
     print(i)
+
+
