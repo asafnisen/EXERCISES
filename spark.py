@@ -31,28 +31,53 @@ df2= df2.toDF(*newcolumns)
 all_video_advertisers = df2.where("Date != 'Date'")         # ordering the data
 
 
-
 ## Rubicon  
 df1= spark.read.option("multiline","true") \
       .json(r"C:\PYTHON\Rubicon.json")
 
-df1= df1.withColumn("Advertiser_Name", lit("Rubicon"))
+df1= df1.withColumnRenamed("Ad Format","Ad_Format").withColumn("Advertiser_Name", lit("Rubicon"))
+
+df1 = df1.where ("Ad_Format = 'Video'")
 
 newcolumns = ['Date','Advertiser_Name','Domain','Revenue']
 df_Rubicon = df1.select("Date","Advertiser_Name","Referring Domain","Publisher Net Revenue").toDF(*newcolumns) # ordering the data
 
+## GROUP DATE 
+
+
+
+df_Rubicon= (df_Rubicon.withColumn("Revenue",df_Rubicon.Revenue.cast("float")))  # לא חובה
+all_video_advertisers= (all_video_advertisers.withColumn("Revenue",all_video_advertisers.Revenue.cast("float")))    
+
+all_video_advertisers =  all_video_advertisers.groupBy("Date","Advertiser_Name","Domain").sum("Revenue")
+df_Rubicon =  df_Rubicon.groupBy("Date","Advertiser_Name","Domain").sum("Revenue")
+
+
+# print (df_Rubicon.groupBy("Date","Advertiser_Name","Domain").count().show())   דוגמה 
+# עוד דוגמה 
+# פייטון מתבלבל בין פקודה SUM של SPARK לבין פנימית
+# לכן צריך לציין לו 
+#import pyspark.sql.functions as psf
+#print (df_Rubicon.groupBy("Date","Advertiser_Name","Domain").agg(psf.sum("Revenue")).show())
+
+
+
+#print (df_Rubicon.show())
+#print (all_video_advertisers.show())
 
 df_Rubicon.createOrReplaceTempView("temp")
 all_video_advertisers.createOrReplaceTempView("temp2")
-sqlDF = spark.sql(" select ROW_NUMBER() OVER(PARTITION BY Advertiser_Name,Domain ORDER BY Date ASC) ,* from (SELECT * FROM temp union SELECT * FROM temp2) t where Advertiser_Name = 'Rubicon' order by Advertiser_Name,Domain ")
+
+SQL = " select ROW_NUMBER() OVER(PARTITION BY Advertiser_Name,Domain ORDER BY Date ASC,order_a) ,* from (SELECT *, 1 as {} FROM temp union SELECT * , 2  FROM temp2) t where Advertiser_Name = 'Rubicon' order by Advertiser_Name,Date,Domain ".format("order_a")
+sqlDF = spark.sql(SQL)
+
+print (SQL)
+print ("##################################################################################")
+print ("##################################################################################")
+sqlDF.show()
 
 
-## דוגמה שליפה ODBC + ALCHEMY
-
-cursor = conn.cursor()
-cursor.execute('SELECT * FROM asaf')
-
-for i in cursor:
-    print(i)
 
 
+
+       
